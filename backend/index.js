@@ -30,6 +30,7 @@ const run = async () => {
                 type: 'AUTH_ERROR',
                 message: 'Нет токена.'
             }));
+            throw new Error('Нет токена!');
         }
         const user = await User.findOne({token});
         if(!user) {
@@ -37,14 +38,16 @@ const run = async () => {
                 type: 'USER_NOT_FOUND',
                 message: 'Пользователь не найден.'
             }));
+            throw new Error('Пользователь не найден');
         }
         const id = nanoid();
         connections[id] = ws;
         activeUsers[id] = user.username;
+        console.log(`Пользователь ${id} подключен.`);
         const messages = await Message.find().sort({datetime: 1}).populate('user', 'username -_id').limit(30);
         ws.send(JSON.stringify({
             type: 'LAST_MESSAGES',
-            messages
+            messages: messages
         }));
 
         Object.keys(connections).forEach(connId => {
@@ -65,16 +68,20 @@ const run = async () => {
                     }
                     const newMessage = new Message(message);
                     await newMessage.save();
-                    Object.keys(connections.forEach(connId => {
+                    Object.keys(connections).forEach(connId => {
                         const conn = connections[connId];
                         conn.send(JSON.stringify({
                             type: 'NEW_MESSAGE',
                             message: {
-                                user: user.username,
-                                message: data.message
+                                _id: newMessage._id,
+                                user: {
+                                    username: user.username
+                                },
+                                message: newMessage.message,
+                                datetime: newMessage.datetime
                             }
                         }));
-                    }));
+                    });
                     break;
                 default:
                     console.log('No data type.');

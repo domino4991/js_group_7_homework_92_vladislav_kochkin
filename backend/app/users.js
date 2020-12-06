@@ -9,7 +9,7 @@ router.post('/', async (req, res) => {
         });
         user.genToken();
         await user.save();
-        return res.send(user);
+        return res.send({message: 'Регистрация прошла успешно. Вы будете перенаправлены на страницу входа.'});
     } catch (e) {
         return res.status(400).send(e);
     }
@@ -24,7 +24,8 @@ router.post('/sessions', async (req, res) => {
         user.genToken();
         await user.save({validateBeforeSave: false});
         return res.send({
-            username: user.username
+            username: user.username,
+            token: user.token
         });
     } catch (e) {
         return res.status(400).send(e);
