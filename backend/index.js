@@ -26,18 +26,10 @@ const run = async () => {
     app.ws('/chat', async (ws, req) => {
         const token = req.query.token;
         if(!token) {
-            ws.send(JSON.stringify({
-                type: 'AUTH_ERROR',
-                message: 'Нет токена.'
-            }));
             throw new Error('Нет токена!');
         }
         const user = await User.findOne({token});
         if(!user) {
-            ws.send(JSON.stringify({
-                type: 'USER_NOT_FOUND',
-                message: 'Пользователь не найден.'
-            }));
             throw new Error('Пользователь не найден');
         }
         const id = nanoid();
@@ -92,6 +84,13 @@ const run = async () => {
         ws.on('close', async () => {
             delete connections[id];
             delete activeUsers[id];
+            Object.keys(connections).forEach(connId => {
+                const conn = connections[connId];
+                conn.send(JSON.stringify({
+                    type: 'ACTIVE_USERS',
+                    activeUsers
+                }));
+            });
         });
     });
 
